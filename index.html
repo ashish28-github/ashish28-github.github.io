@@ -1,34 +1,229 @@
 <!DOCTYPE html>
 <html>
-<script src='https://d3js.org/d3.v5.min.js'></script>
-<style> circle {fill: lightblue; stroke: black;} </style>
+<script src='https://d3js.org/d3.v4.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/1.12.1/d3-annotation.min.js'></script>
+<style>
+  circle {
+    fill: lightblue;
+    stroke: black;
+  }
+</style>
+
 <body onload='init()'>
-<svg width=300 height=300>
-</svg>
-<script>
-async function init() {
-const data = await d3.csv('https://flunky.github.io/cars2017.csv');
-var x = d3.scaleLog().domain([10,150]).range([0,200]); 
-var y = d3.scaleLog().domain([10,150]).range([200,0]);
-d3.select("svg")
-  .append("g").attr("transform", "translate(50,50)")
-  .selectAll('circle')
-  .data(data)
-  .enter()
-  .append('circle')
-  .attr('cx', function(d) {return x(d.AverageCityMPG);})
-  .attr('cy', function(d) {return y(d.AverageHighwayMPG);})
-  .attr('r', function(d) {return Number(d.EngineCylinders)+2;});
-  
-d3.select("svg").append("g")
-.attr("transform","translate(50,50)")
-.call(d3.axisLeft(y).tickValues([10, 20, 50, 100]).tickFormat(d3.format(",~s"))); 
+  <style>
+    body {
+      background-color: whitesmoke;
+    }
 
-d3.select("svg").append("g")
-.attr("transform","translate(50,250)")
-.call(d3.axisBottom(x).tickValues([10, 20, 50, 100]).tickFormat(d3.format(",~s")));
+    :root {
+      --line-chart-color: #607D8B;
+      --annotation-context-color: #00796B;
+      --annotation-above-color: #00BFA5;
+      --annotation-anomaly-color: #E8336D;
+    }
 
-}
-</script>
+    svg {
+      background-color: white;
+      font-family: 'Lato';
+    }
+
+    .axis,
+    .axis text {
+      fill: var(--line-chart-color);
+    }
+
+    .axis line,
+    path {
+      stroke: var(--line-chart-color);
+    }
+
+    path {
+      fill: none;
+    }
+
+    .annotation path {
+      stroke: var(--annotation-context-color);
+    }
+
+    .annotation:not(.above):not(.anomaly) path {
+      stroke-dasharray: 1, 3;
+    }
+
+    .annotation text {
+      fill: var(--annotation-context-color);
+    }
+
+    .annotation.above path {
+      stroke: var(--annotation-above-color);
+    }
+
+    .annotation.above text {
+      fill: var(--annotation-above-color);
+    }
+
+    .annotation.anomaly path {
+      stroke: var(--annotation-anomaly-color);
+      stroke-width: 2px;
+    }
+
+    .annotation.anomaly text {
+      fill: var(--annotation-anomaly-color);
+    }
+
+    .annotation-note-bg {
+      fill: rgba(0, 0, 0, 0);
+    }
+
+    .annotation-note-title {
+      font-weight: bold;
+    }
+
+    text.title {
+      font-size: 1.2em;
+      font-weight: bold;
+    }
+  </style>
+  <center>
+    <p>
+      <label for="nCylinder" style="display: inline-block; width: 240px; text-align: right">
+        No of cylinders: <span id="nRadius-value"></span>
+      </label>
+      <input type="range" name="mySlider" id=mySlider min="0" max="12" value="12">
+    </p>
+    <div id="narrative_viz"></div>
+    <svg width=500 height=500>
+    </svg>
+    <script>
+      //Tool tip to display car's make and no cylinders 
+      d3.select('body')
+        .append('div')
+        .attr('id', 'tooltip')
+        .attr('style', 'position: absolute; opacity: 0;');
+
+      function init() {
+        d3.csv('https://flunky.github.io/cars2017.csv', function (data) {
+          var x = d3.scaleLog().domain([10, 150]).range([0, 400]);
+          var y = d3.scaleLog().domain([10, 150]).range([400, 0]);
+
+          d3.select("svg")
+            .append("g").attr("transform", "translate(50,50)")
+            .selectAll('circle')
+            .data(data)
+            .enter()
+            .append('circle')
+            .attr('cx', function (d) { return x(d.AverageCityMPG); })
+            .attr('cy', function (d) { return y(d.AverageHighwayMPG); })
+            .attr('r', function (d) { return Number(d.EngineCylinders) + 2; })
+            .on('mouseover', function (d) {
+              d3.select('#tooltip').transition().duration(200).style('opacity', 1).text("Make:" + d.Make + ", Cylinders:" + d.EngineCylinders)
+            })
+            .on('mouseout', function (d) {
+              d3.select('#tooltip').style('opacity', 0)
+            })
+            .on('mousemove', function (d) {
+              d3.select('#tooltip')
+                .style('left', d3.event.pageX + 'px')
+                .style('top', d3.event.pageY + 'px')
+            });
+          //draw Y axis
+          d3.select("svg").append("g")
+            .attr("transform", "translate(50,50)")
+            .call(d3.axisLeft(y)
+              .tickValues([10, 20, 50, 100])
+              .tickFormat(function (d) { return d; }));
+
+          //draw X axis
+          d3.select("svg").append("g")
+            .attr("transform", "translate(50,450)")
+            .call(d3.axisBottom(x)
+              .tickValues([10, 20, 50, 100])
+              .tickFormat(function (d) { return d; }));
+          //Define annotations. 
+          const annotations = [
+            {
+              //below in makeAnnotations has type set to d3.annotationLabel
+              //you can add this type value below to override that default
+              type: d3.annotationCalloutCircle,
+              note: {
+                label: "Electric cars/ Zero cylinders",
+                lineType: "none",
+                orientation: "left",
+                align: "left"
+              },
+              subject: {
+                radius: 70
+              },
+              x: 80,
+              y: 80,
+              className: "anomaly",
+              dy: 70,
+              dx: 0
+            },
+          ];
+
+          const makeAnnotations = d3.annotation().annotations(annotations);
+
+          //Add annotation
+          d3.select("svg")
+            .append("g")
+            .attr("transform", "translate(330,40)")
+            .attr("class", "annotation-group")
+            .call(makeAnnotations);
+
+          // Slider listener
+          d3.select("#mySlider").on("change", function (d) {
+            selectedValue = this.value
+            updateViz(selectedValue)
+          });
+
+          // A function that update the scene when slider is moved (i.e. trigger)
+          function updateViz(selectedValue) {
+            //Clear existing scene and create new one after filtering the data as per no of cylinders which is scene parameter
+            d3.select("svg").html("");
+            d3.select("svg")
+              .append("g").attr("transform", "translate(50,50)")
+              .selectAll('circle')
+              .data(data)
+              .enter()
+              .append('circle')
+              .filter(function (d) { return Number(d.EngineCylinders) <= selectedValue })
+              .attr('cx', function (d) { return x(d.AverageCityMPG); })
+              .attr('cy', function (d) { return y(d.AverageHighwayMPG); })
+              .attr('r', function (d) { return Number(d.EngineCylinders) + 2; })
+              .on('mouseover', function (d) {
+                d3.select('#tooltip').transition().duration(200).style('opacity', 1).text("Make:" + d.Make + ", Cylinders:" + d.EngineCylinders)
+              })
+              .on('mouseout', function (d) {
+                d3.select('#tooltip').style('opacity', 0)
+              })
+              .on('mousemove', function (d) {
+                d3.select('#tooltip')
+                  .style('left', d3.event.pageX + 'px')
+                  .style('top', d3.event.pageY + 'px')
+              });
+
+            d3.select("svg").append("g")
+              .attr("transform", "translate(50,50)")
+              .call(d3.axisLeft(y)
+                .tickValues([10, 20, 50, 100])
+                .tickFormat(function (d) { return d; }));
+
+            d3.select("svg").append("g")
+              .attr("transform", "translate(50,450)")
+              .call(d3.axisBottom(x)
+                .tickValues([10, 20, 50, 100])
+                .tickFormat(function (d) { return d; }));
+
+            d3.select("svg")
+              .append("g")
+              .attr("transform", "translate(330,40)")
+              .attr("class", "annotation-group")
+              .call(makeAnnotations);
+          }
+        });
+      }
+    </script>
+  </center>
 </body>
+
 </html>
