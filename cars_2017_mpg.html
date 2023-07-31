@@ -25,8 +25,13 @@
       font-family: 'Lato';
     }
 
-    .annotation path {
-      stroke: var(--annotation-context-color);
+    path {
+      fill: none;
+    }
+
+    .annotation.anomaly path {
+      stroke: var(--annotation-anomaly-color);
+      stroke-width: 2px;
     }
 
     .annotation.anomaly text {
@@ -76,7 +81,7 @@
             .attr('cy', function (d) { return y(d.AverageHighwayMPG); })
             .attr('r', function (d) { return Number(d.EngineCylinders) + 2; })
             .on('mouseover', function (d) {
-              d3.select('#tooltip').transition().duration(200).style('opacity', 1).text("Make: " + d.Make + ", Cylinders: " + d.EngineCylinders)
+              d3.select('#tooltip').transition().duration(200).style('opacity', 1).text("Make:" + d.Make + ", Cylinders:" + d.EngineCylinders)
             })
             .on('mouseout', function (d) {
               d3.select('#tooltip').style('opacity', 0)
@@ -92,7 +97,6 @@
             .call(d3.axisLeft(y)
               .tickValues([10, 20, 50, 100])
               .tickFormat(function (d) { return d; }));
-          // Add y axis label
           d3.select("svg").append("g")
             .attr("transform", "translate(20,40)")
             .append("text")
@@ -104,7 +108,6 @@
             .call(d3.axisBottom(x)
               .tickValues([10, 20, 50, 100])
               .tickFormat(function (d) { return d; }));
-          // Add x axis label
           d3.select("svg").append("g")
             .attr("transform", "translate(300,490)")
             .append("text")
@@ -113,6 +116,8 @@
           //Define annotations. 
           const annotations = [
             {
+              //below in makeAnnotations has type set to d3.annotationLabel
+              //you can add this type value below to override that default
               type: d3.annotationCalloutCircle,
               note: {
                 label: "Electric cars/ Zero cylinders",
@@ -150,7 +155,6 @@
           function updateViz(selectedValue) {
             //Clear existing scene and create new one after filtering the data as per no of cylinders which is scene parameter
             d3.select("svg").html("");
-            //Update no of cylinders value
             d3.select("text").text(selectedValue.toString());
             d3.select("svg")
               .append("g").attr("transform", "translate(50,50)")
@@ -173,24 +177,22 @@
                   .style('left', d3.event.pageX + 'px')
                   .style('top', d3.event.pageY + 'px')
               });
-            // Add Y axis
+
             d3.select("svg").append("g")
               .attr("transform", "translate(50,50)")
               .call(d3.axisLeft(y)
                 .tickValues([10, 20, 50, 100])
                 .tickFormat(function (d) { return d; }));
-            // Add Y axis label
             d3.select("svg").append("g")
               .attr("transform", "translate(20,40)")
               .append("text")
               .text("Avg Highway MPG");
-            // Add X axis
+
             d3.select("svg").append("g")
               .attr("transform", "translate(50,450)")
               .call(d3.axisBottom(x)
                 .tickValues([10, 20, 50, 100])
                 .tickFormat(function (d) { return d; }));
-            // Add X axis label
             d3.select("svg").append("g")
               .attr("transform", "translate(300,490)")
               .append("text")
@@ -198,6 +200,8 @@
 
             const annotations = [
               {
+                //below in makeAnnotations has type set to d3.annotationLabel
+                //you can add this type value below to override that default
                 type: d3.annotationCalloutCircle,
                 note: {
                   label: "Electric cars/ Zero cylinders",
@@ -217,6 +221,7 @@
             ];
 
             const makeAnnotations = d3.annotation().annotations(annotations);
+
             d3.select("svg")
               .append("g")
               .attr("transform", "translate(330,40)")
